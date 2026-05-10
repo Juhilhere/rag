@@ -6,7 +6,23 @@ export async function generateAnswer(question, chunks) {
 
   const context =
     chunks && chunks.length > 0
-      ? chunks.map((chunk) => chunk.pageContent).join("\n\n")
+      ? chunks
+          .map((chunk, index) => {
+            const sourceName =
+              chunk?.metadata?.originalName ||
+              chunk?.metadata?.filename ||
+              chunk?.metadata?.source ||
+              "Unknown source";
+            const page =
+              chunk?.metadata?.pageNumber ||
+              chunk?.metadata?.page ||
+              chunk?.metadata?.loc?.pageNumber ||
+              chunk?.metadata?.loc?.page;
+
+            const header = page ? `[${index + 1}] ${sourceName} (page ${page})` : `[${index + 1}] ${sourceName}`;
+            return `${header}\n${chunk.pageContent}`;
+          })
+          .join("\n\n---\n\n")
       : "No document context available.";
 
   const response = await openrouter.chat.completions.create({

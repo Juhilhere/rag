@@ -47,19 +47,28 @@ export default function Index() {
   const handleAddSource = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf"],
+        type: ["application/pdf", "text/csv"],
       });
 
       if (!result.canceled) {
         const pickedFile = result.assets[0];
         setCurrentFile(pickedFile.name);
-        
-        // Mock success for UI demo
-        // const response = await uploadDocument(pickedFile);
-        // setCollectionName(response.data.collectionName);
+
+        setIsThinking(true);
+        const uploadRes = await uploadDocument(pickedFile);
+        const nextCollectionName = uploadRes?.data?.collectionName;
+
+        if (!nextCollectionName) {
+          throw new Error("Upload succeeded but collectionName was missing in response.");
+        }
+
+        setCollectionName(nextCollectionName);
       }
     } catch (err) {
       console.error(err);
+    }
+    finally {
+      setIsThinking(false);
     }
   };
 
@@ -85,7 +94,7 @@ export default function Index() {
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
-      const response = await askQuestion(questionToAsk, collectionName || "notebooklm");
+      const response = await askQuestion(questionToAsk, collectionName || "");
       
       const botMessageId = (Date.now() + 1).toString();
       const fullText = response.answer;
